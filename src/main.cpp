@@ -19,7 +19,7 @@ WUPS_PLUGIN_VERSION("v1.0");
 WUPS_PLUGIN_AUTHOR("UnFuzed");
 WUPS_PLUGIN_LICENSE("BSD");
 
-#define TWWHD_TITLE_ID 0x0005000010143500ULL
+#define TWWHD_TITLE_ID 0x0005000010143500ULL //Will be changed to TWWHDR title ID later
 
 #define IP_KEY   "pcIp"
 #define PORT_KEY "pcPort"
@@ -132,7 +132,7 @@ INITIALIZE_PLUGIN()
 
 ON_APPLICATION_START()
 {
-    if (OSGetTitleID() != TWWHD_TITLE_ID)
+    if (OSGetTitleID() != TWWHD_TITLE_ID) // Only run for TWWHD
         return;
 
     running = true;
