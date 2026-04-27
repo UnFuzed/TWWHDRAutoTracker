@@ -1,10 +1,8 @@
 #include "udp_thread.h"
 
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
-#include <stdint.h>
 
 static int sock = -1;
 static sockaddr_in target;

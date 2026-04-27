@@ -3,7 +3,6 @@
 #include "udp_thread.h"
 
 #include <stdio.h>
-#include <stdint.h>
 
 #define TICK_SKIP 6
 
