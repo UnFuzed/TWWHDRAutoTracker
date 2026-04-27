@@ -8,6 +8,7 @@
 #include <wups/config/WUPSConfigItemStub.h>
 #include <wups/config_api.h>
 
+
 #include "inventory.h"
 #include "udp_thread.h"
 
