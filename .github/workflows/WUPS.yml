@@ -1,4 +1,4 @@
-name: Build Wii U Plugin
+name: Wii U Plugin CI
 
 on:
   push:
@@ -11,20 +11,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout repo
       - uses: actions/checkout@v4
 
-      - name: Install devkitPro
+      # 2. Install dependencies needed for bootstrap
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget
-          wget https://apt.devkitpro.org/install-devkitpro-pacman
-          chmod +x install-devkitpro-pacman
-          sudo ./install-devkitpro-pacman
+          sudo apt-get install -y wget xz-utils ca-certificates
 
-      - name: Install Wii U toolchain
+      # 3. Install devkitPro (correct modern method)
+      - name: Install devkitPro toolchain
+        run: |
+          wget https://github.com/devkitPro/pacman/releases/latest/download/bootstrap-linux.tar.xz
+          tar -xf bootstrap-linux.tar.xz
+          sudo ./bootstrap-linux/install-devkitpro-pacman
+
+      # 4. Install Wii U development tools
+      - name: Install Wii U devkit
         run: |
           sudo dkp-pacman -Syu --noconfirm
           sudo dkp-pacman -S --noconfirm wiiu-dev
 
+      # 5. Build project
       - name: Build
         run: make
