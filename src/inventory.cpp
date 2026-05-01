@@ -1,6 +1,6 @@
 #include "inventory.h"
-#include "memory_map.h"
 #include "udp_thread.h"
+#include "memory_map.h"
 
 #include <stdio.h>
 
@@ -17,17 +17,60 @@ static inline uint8_t safeRead(uint32_t addr)
     return *(volatile uint8_t*)addr;
 }
 
+static void handleBitset(uint32_t idx, uint8_t prev, uint8_t current, const char* name)
+{
+    if (prev == current)
+        return;
+
+    uint8_t diff = prev ^ current;
+
+    for (int bit = 0; bit < 8; bit++)
+    {
+        uint8_t mask = (1 << bit);
+
+        // Only detect 0 → 1
+        if ((diff & mask) && (current & mask))
+        {
+            char msg[128];
+            snprintf(msg, sizeof(msg),
+                     "%s BIT %d OBTAINED (VAL=%02X)",
+                     name, bit + 1, current);
+            UDP_Send(msg);
+        }
+    }
+}
+
 static void check(uint32_t idx, uint32_t addr)
 {
     uint8_t current = safeRead(addr);
+    uint8_t prev = last[idx];
 
-    if (last[idx] != current && last[idx] == 0x00 && current != 0x00) // Checks if an address was changed from 0 to something else, which indicates an item was obtained
+    switch (idx)
     {
-        char msg[128];
-        snprintf(msg, sizeof(msg),
-                 "ITEM IDX=%u VAL=%02X",
-                 idx, current);
-        UDP_Send(msg);
+        case TRIFORCE_IDX:
+            handleBitset(idx, prev, current, "TRIFORCE");
+            break;
+
+        case PEARLS_IDX:
+            handleBitset(idx, prev, current, "PEARL");
+            break;
+
+        case SONGS_IDX:
+            handleBitset(idx, prev, current, "SONG");
+            break;
+
+        default:
+        {
+            if (prev != current && prev == 0x00 && current != 0x00)
+            {
+                char msg[128];
+                snprintf(msg, sizeof(msg),
+                         "ITEM IDX=%u VAL=%02X",
+                         idx, current);
+                UDP_Send(msg);
+            }
+            break;
+        }
     }
 
     last[idx] = current;
@@ -36,7 +79,9 @@ static void check(uint32_t idx, uint32_t addr)
 void Inventory_Init()
 {
     for (uint32_t i = 0; i < SLOT_COUNT; i++)
-        last[i] = 0xFF; // Sets all values to be 0xFF at the start
+    {
+        last[i] = 0x00;
+    }
 }
 
 void Inventory_Tick()
@@ -44,7 +89,7 @@ void Inventory_Tick()
     if (++tickSkip < TICK_SKIP)
         return;
 
-    tickSkip = 0; // Only checks the inventory every 6 ticks
+    tickSkip = 0;
 
     for (uint32_t i = 0; i < SLOT_COUNT; i++)
     {

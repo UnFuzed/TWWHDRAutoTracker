@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 struct Slot
 {
@@ -37,14 +38,15 @@ namespace Slots
     static constexpr Slot Sail             = {0x1506B53D};
     static constexpr Slot PowerBracelets   = {0x1506B5B6};
 
-    static constexpr Slot Triforce         = {0x1506B5BE};
-    static constexpr Slot Pearls           = {0x1506B5BF};
-    static constexpr Slot Songs            = {0x1506B5BD};
-
     static constexpr Slot BombBag          = {0x1506B570};
     static constexpr Slot Quiver           = {0x1506B56F};
     static constexpr Slot Wallet           = {0x1506B512};
     static constexpr Slot MagicMeter       = {0x1506B513};
+
+    // 🔹 Bitsets
+    static constexpr Slot Triforce         = {0x1506B5BE};
+    static constexpr Slot Pearls           = {0x1506B5BF};
+    static constexpr Slot Songs            = {0x1506B5BD};
 
     static constexpr Slot Mail1            = {0x1506B586};
     static constexpr Slot Mail2            = {0x1506B587};
@@ -55,7 +57,6 @@ namespace Slots
     static constexpr Slot Mail7            = {0x1506B58C};
     static constexpr Slot Mail8            = {0x1506B58D};
 }
-
 
 static const uint32_t gSlots[] =
 {
@@ -92,8 +93,16 @@ static const uint32_t gSlots[] =
     Slots::BombBag.address,
     Slots::Quiver.address,
     Slots::Wallet.address,
-    Slots::MagicMeter.address
+    Slots::MagicMeter.address,
+
+    Slots::Triforce.address,
+    Slots::Pearls.address,
+    Slots::Songs.address
 };
 
-
 #define SLOT_COUNT (sizeof(gSlots) / sizeof(gSlots[0]))
+
+// 🔹 Index constants (no guessing anymore)
+#define TRIFORCE_IDX 29
+#define PEARLS_IDX   30
+#define SONGS_IDX    31
