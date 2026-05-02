@@ -4,11 +4,15 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #define TICK_SKIP 6
 
 static uint8_t last[SLOT_COUNT];
 static uint32_t tickSkip = 0;
+
+static char cachedStage[64] = {0};
+static int cachedBlock = 0;
 
 static inline uint8_t safeRead(uint32_t addr)
 {
@@ -18,6 +22,43 @@ static inline uint8_t safeRead(uint32_t addr)
     return *(volatile uint8_t*)addr;
 }
 
+static void UpdateStageCache()
+{
+    const volatile char* stageName = (const volatile char*)0x109763E4;
+
+    if (!stageName)
+        return;
+
+    char buffer[64] = {0};
+
+    for (int i = 0; i < 63; i++)
+    {
+        char c = stageName[i];
+        buffer[i] = c;
+
+        if (c == '\0')
+            break;
+    }
+
+    if (buffer[0] == '\0')
+        return;
+
+    if (strcmp(buffer, cachedStage) != 0)
+    {
+        strncpy(cachedStage, buffer, sizeof(cachedStage) - 1);
+        cachedStage[63] = '\0';
+
+        cachedBlock =
+            (strcmp(buffer, "sea_T") == 0 ||
+             strcmp(buffer, "Name") == 0);
+    }
+}
+
+static int CheckStage()
+{
+    return cachedBlock;
+}
+
 static void check(uint32_t idx)
 {
     const Slot& slot = gSlots[idx];
@@ -25,7 +66,6 @@ static void check(uint32_t idx)
     uint8_t current = safeRead(slot.address);
     uint8_t prev = last[idx];
 
-    // Only do anything if value changed
     if (current == prev)
         return;
 
@@ -84,13 +124,18 @@ static void check(uint32_t idx)
 void Inventory_Init()
 {
     for (uint32_t i = 0; i < SLOT_COUNT; i++)
-    {
         last[i] = 0x00;
-    }
+
+    memset(cachedStage, 0, sizeof(cachedStage));
 }
 
 void Inventory_Tick()
 {
+    UpdateStageCache();
+
+    if (CheckStage() == 1)
+        return;
+
     if (++tickSkip < TICK_SKIP)
         return;
 

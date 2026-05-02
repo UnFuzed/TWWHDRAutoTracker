@@ -16,6 +16,7 @@ WUPS_PLUGIN_AUTHOR("UnFuzed");
 WUPS_PLUGIN_LICENSE("BSD");
 
 #define TWWHD_TITLE_ID 0x0005000010143500ULL
+#define TWWHDR_TITLE_ID 0x0005000010143599ULL
 
 static OSThread thread;
 static uint8_t stack[0x4000];
@@ -75,7 +76,7 @@ INITIALIZE_PLUGIN()
 
 ON_APPLICATION_START()
 {
-    if (OSGetTitleID() != TWWHD_TITLE_ID)
+    if (OSGetTitleID() != TWWHD_TITLE_ID && OSGetTitleID() != TWWHDR_TITLE_ID)
         return;
 
     running = true;
