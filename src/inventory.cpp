@@ -1,8 +1,9 @@
 #include "inventory.h"
-#include "udp_thread.h"
+#include "tcp_thread.h"
 #include "memory_map.h"
 
 #include <stdio.h>
+#include <stdint.h>
 
 #define TICK_SKIP 6
 
@@ -17,60 +18,64 @@ static inline uint8_t safeRead(uint32_t addr)
     return *(volatile uint8_t*)addr;
 }
 
-static void handleBitset(uint32_t idx, uint8_t prev, uint8_t current, const char* name)
+static void check(uint32_t idx)
 {
-    if (prev == current)
-        return;
+    const Slot& slot = gSlots[idx];
 
-    uint8_t diff = prev ^ current;
-
-    for (int bit = 0; bit < 8; bit++)
-    {
-        uint8_t mask = (1 << bit);
-
-        // Only detect 0 → 1
-        if ((diff & mask) && (current & mask))
-        {
-            char msg[128];
-            snprintf(msg, sizeof(msg),
-                     "%s BIT %d OBTAINED (VAL=%02X)",
-                     name, bit + 1, current);
-            UDP_Send(msg);
-        }
-    }
-}
-
-static void check(uint32_t idx, uint32_t addr)
-{
-    uint8_t current = safeRead(addr);
+    uint8_t current = safeRead(slot.address);
     uint8_t prev = last[idx];
 
-    switch (idx)
+    // Only do anything if value changed
+    if (current == prev)
+        return;
+
+    if (slot.type == SLOT_BITSET)
     {
-        case TRIFORCE_IDX:
-            handleBitset(idx, prev, current, "TRIFORCE");
-            break;
+        uint8_t diff = prev ^ current;
 
-        case PEARLS_IDX:
-            handleBitset(idx, prev, current, "PEARL");
-            break;
-
-        case SONGS_IDX:
-            handleBitset(idx, prev, current, "SONG");
-            break;
-
-        default:
+        for (int bit = 0; bit < 8; bit++)
         {
-            if (prev != current && prev == 0x00 && current != 0x00)
+            uint8_t mask = (1 << bit);
+
+            if (diff & mask)
             {
+                bool nowOn = (current & mask);
+
                 char msg[128];
-                snprintf(msg, sizeof(msg),
-                         "ITEM IDX=%u VAL=%02X",
-                         idx, current);
-                UDP_Send(msg);
+
+                if (slot.bitNames)
+                {
+                    snprintf(msg, sizeof(msg),
+                             "%s: %s %s (VAL=%02X)\n",
+                             slot.name,
+                             slot.bitNames[bit],
+                             nowOn ? "ON" : "OFF",
+                             current);
+                }
+                else
+                {
+                    snprintf(msg, sizeof(msg),
+                             "%s BIT %d %s (VAL=%02X)\n",
+                             slot.name,
+                             bit + 1,
+                             nowOn ? "ON" : "OFF",
+                             current);
+                }
+
+                TCP_Send(msg);
             }
-            break;
         }
+    }
+    else
+    {
+        char msg[128];
+        snprintf(msg, sizeof(msg),
+                 "%s CHANGED %02X -> %02X\n",
+                 slot.name,
+                 prev,
+                 current);
+
+        TCP_Send(msg);
     }
 
     last[idx] = current;
@@ -93,6 +98,6 @@ void Inventory_Tick()
 
     for (uint32_t i = 0; i < SLOT_COUNT; i++)
     {
-        check(i, gSlots[i]);
+        check(i);
     }
 }
