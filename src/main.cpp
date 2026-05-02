@@ -21,14 +21,18 @@ WUPS_PLUGIN_LICENSE("BSD");
 static OSThread thread;
 static uint8_t stack[0x4000];
 static volatile bool running = false;
-static bool isConnected = false;
+static bool TCPStarted = false;
 
 WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle rootHandle)
 {
     WUPSConfigCategory root(rootHandle);
 
     root.add(WUPSConfigItemStub::Create(
-        std::string("TCP: ") + (isConnected ? "Running" : "Stopped")
+        std::string("Plugin: ") + (running ? "Running" : "Stopped")
+    ));
+
+    root.add(WUPSConfigItemStub::Create(
+        std::string("TCP: ") + (TCPStarted ? "Running" : "Stopped")
     ));
 
     return WUPSCONFIG_API_CALLBACK_RESULT_SUCCESS;
@@ -49,7 +53,7 @@ static int ThreadEntry(int, const char**)
     {
         if (!tcpReady)
         {
-            isConnected = TCP_Init(0, 4444);
+            TCPStarted = TCP_Init(0, 4444);
             tcpReady = true;
         }
 
@@ -60,7 +64,7 @@ static int ThreadEntry(int, const char**)
     if (tcpReady)
     {
         TCP_Close();
-        isConnected = false;
+        TCPStarted = false;
     }
 
     return 0;
@@ -98,6 +102,6 @@ ON_APPLICATION_START()
 ON_APPLICATION_ENDS()
 {
     running = false;
-    isConnected = false;
+    TCPStarted = false;
     TCP_Close();
 }
